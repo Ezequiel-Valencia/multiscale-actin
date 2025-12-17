@@ -120,3 +120,7 @@ ENV/
 # outputs
 *_logs.txt
 *~$template.xlsx
+
+
+.envrc
+.idea
