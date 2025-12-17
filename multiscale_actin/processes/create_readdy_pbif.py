@@ -7,8 +7,8 @@ from process_bigraph.emitter import emitter_from_wires, gather_emitter_results
 from simularium_readdy_models.actin import ActinGenerator, FiberData
 from simularium_readdy_models.common import get_membrane_monomers
 
-from multiscale_actin.processes.readdy_actin_membrane import ReaddyActinMembrane
-from multiscale_actin.processes.simularium_emitter import SimulariumEmitter
+from multiscale_actin.processes import ReaddyActinMembrane
+from multiscale_actin.processes import SimulariumEmitter
 
 
 def get_config() -> dict[str, Any]:
