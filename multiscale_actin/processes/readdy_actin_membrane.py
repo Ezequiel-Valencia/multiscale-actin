@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import numpy as np
 
@@ -189,8 +190,8 @@ def simulate_readdy(internal_timestep, readdy_system, readdy_simulation, timeste
     readdy_simulation._run_custom_loop(loop, show_summary=False)
 
 
-def run_readdy_actin_membrane(total_time=3):
-    config = {
+def get_config() -> dict[str, Any]:
+    return {
         "name": "actin_membrane",
         "internal_timestep": 0.1,  # ns
         "box_size": np.array([float(150.0)] * 3),  # nm
@@ -270,9 +271,8 @@ def run_readdy_actin_membrane(total_time=3):
         'random_seed': 0,
     }
 
-    # make the simulation
-    random.seed(config['random_seed'])
-    np.random.seed(config['random_seed'])
+
+def get_monomers():
     actin_monomers = ActinGenerator.get_monomers(
         fibers_data=[
             FiberData(
@@ -283,30 +283,30 @@ def run_readdy_actin_membrane(total_time=3):
                 ],
                 "Actin-Polymer",
             )
-        ], 
-        use_uuids=False, 
-        start_normal=np.array([0., 1., 0.]), 
+        ],
+        use_uuids=False,
+        start_normal=np.array([0., 1., 0.]),
         longitudinal_bonds=True,
         barbed_binding_site=True,
     )
     actin_monomers = ActinGenerator.setup_fixed_monomers(
-        actin_monomers, 
-        orthogonal_seed=True, 
-        n_fixed_monomers_pointed=3, 
+        actin_monomers,
+        orthogonal_seed=True,
+        n_fixed_monomers_pointed=3,
         n_fixed_monomers_barbed=0,
     )
     membrane_monomers = get_membrane_monomers(
-        center=np.array([25.0, 0.0, 0.0]), 
-        size=np.array([0.0, 100.0, 100.0]), 
+        center=np.array([25.0, 0.0, 0.0]),
+        size=np.array([0.0, 100.0, 100.0]),
         particle_radius=2.5,
         start_particle_id=len(actin_monomers["particles"].keys()),
         top_id=1
     )
     free_actin_monomers = ActinGenerator.get_free_actin_monomers(
-        concentration=500.0, 
-        box_center=np.array([12., 0., 0.]), 
-        box_size=np.array([20., 50., 50.]), 
-        start_particle_id=len(actin_monomers["particles"].keys()) + len(membrane_monomers["particles"].keys()), 
+        concentration=500.0,
+        box_center=np.array([12., 0., 0.]),
+        box_size=np.array([20., 50., 50.]),
+        start_particle_id=len(actin_monomers["particles"].keys()) + len(membrane_monomers["particles"].keys()),
         start_top_id=2
     )
     monomers = {
@@ -317,34 +317,9 @@ def run_readdy_actin_membrane(total_time=3):
         'particles': {**monomers['particles'], **free_actin_monomers['particles']},
         'topologies': {**monomers['topologies'], **free_actin_monomers['topologies']}
     }
+    return monomers
 
-    state  = {
-        'readdy': {
-            '_type': 'process',
-            'address': 'local:readdy',
-            'config': config,
-            'inputs': {
-                'particles': ['particles'],
-                'topologies': ['topologies']        
-            },
-            'outputs': {
-                'particles': ['particles'],
-                'topologies': ['topologies']        
-            }
-        },
-        **monomers
-    }
-
-    state["emitter"] = emitter_from_wires(
-        {
-            'particles': ['particles'],
-            'topologies': ['topologies'],   
-            'global_time': ['global_time']    
-        },
-        address='local:simularium-emitter'
-    )
-
-    core = ProcessTypes()
+def register_items_into_core(core: ProcessTypes):
     particle = {
         'type_name': 'string',
         'position': 'tuple[float,float,float]',
@@ -361,6 +336,42 @@ def run_readdy_actin_membrane(total_time=3):
 
     core.register_process('readdy', ReaddyActinMembrane)
     core.register_process('simularium-emitter', SimulariumEmitter)
+
+
+def run_readdy_actin_membrane(total_time=3):
+    config = get_config()
+
+    # make the simulation
+    random.seed(config['random_seed'])
+    np.random.seed(config['random_seed'])
+
+    monomers = get_monomers()
+
+    emitters_from_wires = emitter_from_wires({
+            'particles': ['particles'],
+            'topologies': ['topologies'],
+            'global_time': ['global_time']
+    },address='local:simularium-emitter')
+    state  = {
+        "emitter": emitters_from_wires,
+        'readdy': {
+            '_type': 'process',
+            'address': 'local:readdy',
+            'config': config,
+            'inputs': {
+                'particles': ['particles'],
+                'topologies': ['topologies']        
+            },
+            'outputs': {
+                'particles': ['particles'],
+                'topologies': ['topologies']        
+            }
+        },
+        **monomers
+    }
+
+    core = ProcessTypes()
+    register_items_into_core(core)
 
     sim = Composite({
         "state": state,
