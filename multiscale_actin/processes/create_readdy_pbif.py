@@ -160,7 +160,7 @@ def register_items_into_core(core: ProcessTypes):
     core.register_process('simularium-emitter', SimulariumEmitter)
 
 
-def generate_readdy_state():
+def generate_readdy_state(output_dir: str):
     config = get_config()
 
     # make the simulation
@@ -174,6 +174,7 @@ def generate_readdy_state():
         'topologies': ['topologies'],
         'global_time': ['global_time']
     }, address='local:simularium-emitter')
+    emitters_from_wires["config"]["output_dir"] = output_dir
     state = {
         "emitter": emitters_from_wires,
         'readdy': {
@@ -194,7 +195,7 @@ def generate_readdy_state():
     return state
 
 def run_readdy_actin_membrane(total_time=3):
-    state = generate_readdy_state()
+    state = generate_readdy_state(output_dir="readdy_result")
 
     core = ProcessTypes()
     register_items_into_core(core)

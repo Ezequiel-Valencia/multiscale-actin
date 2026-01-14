@@ -14,6 +14,10 @@ from simulariumio import (
 
 
 class SimulariumEmitter(Emitter):
+    config_schema = {
+        "emit": "schema",
+        "output_dir": "string"
+    }
 
     def __init__(self, config, core):
         super().__init__(config, core)
@@ -26,7 +30,8 @@ class SimulariumEmitter(Emitter):
         return {}
 
     def query(self, query=None):
-        return {'result' : self.save_simularium_file()}
+        output = self.config["output_dir"]
+        return {'result' : self.save_simularium_file(output)}
 
     def get_simularium_monomers(
         self, time, monomers, actin_radius, position_offset, trajectory
@@ -149,7 +154,7 @@ class SimulariumEmitter(Emitter):
             )
         )
 
-    def save_simularium_file(self) -> str:
+    def save_simularium_file(self, output_path: str="test") -> str:
         """
         Save the accumulated timeseries history of emitted data to file
         """
@@ -177,6 +182,5 @@ class SimulariumEmitter(Emitter):
         simularium_converter = SimulariumEmitter.get_simularium_converter(
             trajectory, box_dimensions, 0.1
         )
-        output_path = "test"
         simularium_converter.save(output_path)
         return f"saved to {output_path}.simularium"
