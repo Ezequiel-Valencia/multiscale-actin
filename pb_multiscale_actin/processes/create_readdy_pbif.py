@@ -7,8 +7,8 @@ from process_bigraph.emitter import emitter_from_wires, gather_emitter_results
 from simularium_readdy_models.actin import ActinGenerator, FiberData
 from simularium_readdy_models.common import get_membrane_monomers
 
-from multiscale_actin.processes import ReaddyActinMembrane
-from multiscale_actin.processes import SimulariumEmitter
+from pb_multiscale_actin.processes import ReaddyActinMembrane
+from pb_multiscale_actin.processes import SimulariumEmitter
 
 
 def get_config() -> dict[str, Any]:
@@ -156,8 +156,8 @@ def register_items_into_core(core: ProcessTypes):
     core.register('topology', topology)
     core.register('particle', particle)
 
-    core.register_process('readdy', ReaddyActinMembrane)
-    core.register_process('simularium-emitter', SimulariumEmitter)
+    core.register_process('pb_multiscale_actin.processes.readdy_actin_membrane.ReaddyActinMembrane', ReaddyActinMembrane)
+    core.register_process('pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter', SimulariumEmitter)
 
 
 def generate_readdy_state(output_dir: str):
@@ -173,13 +173,13 @@ def generate_readdy_state(output_dir: str):
         'particles': ['particles'],
         'topologies': ['topologies'],
         'global_time': ['global_time']
-    }, address='local:simularium-emitter')
+    }, address='local:pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter')
     emitters_from_wires["config"]["output_dir"] = output_dir
     state = {
         "emitter": emitters_from_wires,
         'readdy': {
             '_type': 'process',
-            'address': 'local:readdy',
+            'address': 'local:pb_multiscale_actin.processes.readdy_actin_membrane.ReaddyActinMembrane',
             'config': config,
             'inputs': {
                 'particles': ['particles'],
