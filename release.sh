@@ -25,8 +25,8 @@ fi
 
 # Check that we are on master
 branch="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$branch" != "master" ]; then
-    echo "You are on $branch but should be on master for releases."
+if [ "$branch" != "main" ]; then
+    echo "You are on $branch but should be on main for releases."
     echo "Aborting."
     exit 1
 fi
