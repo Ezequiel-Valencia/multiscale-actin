@@ -160,7 +160,7 @@ def register_items_into_core(core: ProcessTypes):
     core.register_process('simularium-emitter', SimulariumEmitter)
 
 
-def run_readdy_actin_membrane(total_time=3):
+def generate_readdy_state():
     config = get_config()
 
     # make the simulation
@@ -191,6 +191,10 @@ def run_readdy_actin_membrane(total_time=3):
         },
         **monomers
     }
+    return state
+
+def run_readdy_actin_membrane(total_time=3):
+    state = generate_readdy_state()
 
     core = ProcessTypes()
     register_items_into_core(core)
