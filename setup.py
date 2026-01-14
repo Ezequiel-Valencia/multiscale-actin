@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='pb_multiscale_actin',
-    version='1.2.0',
+    version='1.2.1',
     packages=[
         'pb_multiscale_actin',
         'pb_multiscale_actin.processes',
