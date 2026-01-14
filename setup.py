@@ -7,13 +7,13 @@ with open("README.md", 'r') as readme:
     long_description = readme.read()
 
 setup(
-    name='multiscale_actin',
+    name='pb_multiscale_actin',
     version='1.2.0',
     packages=[
-        'multiscale_actin',
-        'multiscale_actin.processes',
-        'multiscale_actin.composites',
-        'multiscale_actin.experiments',
+        'pb_multiscale_actin',
+        'pb_multiscale_actin.processes',
+        'pb_multiscale_actin.composites',
+        'pb_multiscale_actin.experiments',
     ],
     author='Blair Lyons',
     author_email='blair208@gmail.com',
