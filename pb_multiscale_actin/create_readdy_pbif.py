@@ -1,14 +1,12 @@
-import random
 from typing import Any
 
 import numpy as np
-from process_bigraph import ProcessTypes, Composite
+import processes
+from bigraph_schema import allocate_core, Core
+from process_bigraph import Composite
 from process_bigraph.emitter import emitter_from_wires, gather_emitter_results
-from simularium_readdy_models.actin import ActinGenerator, FiberData
-from simularium_readdy_models.common import get_membrane_monomers
 
-from pb_multiscale_actin.processes import ReaddyActinMembrane
-from pb_multiscale_actin.processes import SimulariumEmitter
+from pb_multiscale_actin.processes import ReaddyActinMembrane, SimulariumEmitter
 
 
 def get_config() -> dict[str, Any]:
@@ -93,94 +91,30 @@ def get_config() -> dict[str, Any]:
     }
 
 
-def get_monomers():
-    actin_monomers = ActinGenerator.get_monomers(
-        fibers_data=[
-            FiberData(
-                28,
-                [
-                    np.array([-25, 0, 0]),
-                    np.array([25, 0, 0]),
-                ],
-                "Actin-Polymer",
-            )
-        ],
-        use_uuids=False,
-        start_normal=np.array([0., 1., 0.]),
-        longitudinal_bonds=True,
-        barbed_binding_site=True,
-    )
-    actin_monomers = ActinGenerator.setup_fixed_monomers(
-        actin_monomers,
-        orthogonal_seed=True,
-        n_fixed_monomers_pointed=3,
-        n_fixed_monomers_barbed=0,
-    )
-    membrane_monomers = get_membrane_monomers(
-        center=np.array([25.0, 0.0, 0.0]),
-        size=np.array([0.0, 100.0, 100.0]),
-        particle_radius=2.5,
-        start_particle_id=len(actin_monomers["particles"].keys()),
-        top_id=1
-    )
-    free_actin_monomers = ActinGenerator.get_free_actin_monomers(
-        concentration=500.0,
-        box_center=np.array([12., 0., 0.]),
-        box_size=np.array([20., 50., 50.]),
-        start_particle_id=len(actin_monomers["particles"].keys()) + len(membrane_monomers["particles"].keys()),
-        start_top_id=2
-    )
-    monomers = {
-        'particles': {**actin_monomers['particles'], **membrane_monomers['particles']},
-        'topologies': {**actin_monomers['topologies'], **membrane_monomers['topologies']}
-    }
-    monomers = {
-        'particles': {**monomers['particles'], **free_actin_monomers['particles']},
-        'topologies': {**monomers['topologies'], **free_actin_monomers['topologies']}
-    }
-    return monomers
+def register_items_into_core(core: Core):
+    core.register_type('topology', processes.topology)
+    core.register_type('particle', processes.particle)
 
+    core.register_link("pb_multiscale_actin.processes.readdy_actin_membrane.ReaddyActinMembrane", ReaddyActinMembrane)
+    core.register_link("pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter", SimulariumEmitter)
 
-def register_items_into_core(core: ProcessTypes):
-    particle = {
-        'type_name': 'string',
-        'position': 'tuple[float,float,float]',
-        'neighbor_ids': 'list[integer]',
-        '_apply': 'set',
-    }
-    topology = {
-        'type_name': 'string',
-        'particle_ids': 'list[integer]',
-        '_apply': 'set',
-    }
-    core.register('topology', topology)
-    core.register('particle', particle)
-
-    core.register_process('pb_multiscale_actin.processes.readdy_actin_membrane.ReaddyActinMembrane', ReaddyActinMembrane)
-    core.register_process('pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter', SimulariumEmitter)
 
 
 def generate_readdy_state(output_dir: str):
-    config = get_config()
-
-    # make the simulation
-    random.seed(config['random_seed'])
-    np.random.seed(config['random_seed'])
-
-    monomers = get_monomers()
-
     emitters_from_wires = emitter_from_wires({
         'particles': ['particles'],
         'topologies': ['topologies'],
         'global_time': ['global_time']
     }, address='local:pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter')
-    emitters_from_wires["config"]["output_dir"] = output_dir
+
+    config = get_config()
+
     state = {
         "emitter": emitters_from_wires,
         'readdy': {
             '_type': 'process',
             'address': 'local:pb_multiscale_actin.processes.readdy_actin_membrane.ReaddyActinMembrane',
-            'config': config,
+            # 'config': config,
             'inputs': {
                 'particles': ['particles'],
                 'topologies': ['topologies']
@@ -190,14 +124,13 @@ def generate_readdy_state(output_dir: str):
                 'topologies': ['topologies']
             }
         },
-        **monomers
     }
     return state
 
 def run_readdy_actin_membrane(total_time=3):
     state = generate_readdy_state(output_dir="readdy_result")
 
-    core = ProcessTypes()
+    core = allocate_core()
     register_items_into_core(core)
 
     sim = Composite({
