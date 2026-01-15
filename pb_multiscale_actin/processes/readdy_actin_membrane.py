@@ -17,6 +17,136 @@ from simularium_readdy_models.common import ReaddyUtil, get_membrane_monomers
 from simularium_emitter import SimulariumEmitter
 
 
+def get_monomers():
+    actin_monomers = ActinGenerator.get_monomers(
+        fibers_data=[
+            FiberData(
+                28,
+                [
+                    np.array([-25, 0, 0]),
+                    np.array([25, 0, 0]),
+                ],
+                "Actin-Polymer",
+            )
+        ],
+        use_uuids=False,
+        start_normal=np.array([0., 1., 0.]),
+        longitudinal_bonds=True,
+        barbed_binding_site=True,
+    )
+    actin_monomers = ActinGenerator.setup_fixed_monomers(
+        actin_monomers,
+        orthogonal_seed=True,
+        n_fixed_monomers_pointed=3,
+        n_fixed_monomers_barbed=0,
+    )
+    membrane_monomers = get_membrane_monomers(
+        center=np.array([25.0, 0.0, 0.0]),
+        size=np.array([0.0, 100.0, 100.0]),
+        particle_radius=2.5,
+        start_particle_id=len(actin_monomers["particles"].keys()),
+        top_id=1
+    )
+    free_actin_monomers = ActinGenerator.get_free_actin_monomers(
+        concentration=500.0,
+        box_center=np.array([12., 0., 0.]),
+        box_size=np.array([20., 50., 50.]),
+        start_particle_id=len(actin_monomers["particles"].keys()) + len(membrane_monomers["particles"].keys()),
+        start_top_id=2
+    )
+    monomers = {
+        'particles': {**actin_monomers['particles'], **membrane_monomers['particles']},
+        'topologies': {**actin_monomers['topologies'], **membrane_monomers['topologies']}
+    }
+    monomers = {
+        'particles': {**monomers['particles'], **free_actin_monomers['particles']},
+        'topologies': {**monomers['topologies'], **free_actin_monomers['topologies']}
+    }
+    return monomers
+
+
+def get_default_config() -> dict[str, Any]:
+    return {
+        "name": "actin_membrane",
+        "internal_timestep": 0.1,  # ns
+        "box_size": np.array([float(150.0)] * 3),  # nm
+        "periodic_boundary": True,
+        "reaction_distance": 1.0,  # nm
+        "n_cpu": 4,
+        "only_linear_actin_constraints": True,
+        "reactions": True,
+        "dimerize_rate": 1e-30,  # 1/ns
+        "dimerize_reverse_rate": 1.4e-9,  # 1/ns
+        "trimerize_rate": 2.1e-2,  # 1/ns
+        "trimerize_reverse_rate": 1.4e-9,  # 1/ns
+        "pointed_growth_ATP_rate": 2.4e-5,  # 1/ns
+        "pointed_growth_ADP_rate": 2.95e-6,  # 1/ns
+        "pointed_shrink_ATP_rate": 8.0e-10,  # 1/ns
+        "pointed_shrink_ADP_rate": 3.0e-10,  # 1/ns
+        "barbed_growth_ATP_rate": 1e30,  # 1/ns
+        "barbed_growth_ADP_rate": 7.0e-5,  # 1/ns
+        "nucleate_ATP_rate": 2.1e-2,  # 1/ns
+        "nucleate_ADP_rate": 7.0e-5,  # 1/ns
+        "barbed_shrink_ATP_rate": 1.4e-9,  # 1/ns
+        "barbed_shrink_ADP_rate": 8.0e-9,  # 1/ns
+        "arp_bind_ATP_rate": 2.1e-2,  # 1/ns
+        "arp_bind_ADP_rate": 7.0e-5,  # 1/ns
+        "arp_unbind_ATP_rate": 1.4e-9,  # 1/ns
+        "arp_unbind_ADP_rate": 8.0e-9,  # 1/ns
+        "barbed_growth_branch_ATP_rate": 2.1e-2,  # 1/ns
+        "barbed_growth_branch_ADP_rate": 7.0e-5,  # 1/ns
+        "debranching_ATP_rate": 1.4e-9,  # 1/ns
+        "debranching_ADP_rate": 7.0e-5,  # 1/ns
+        "cap_bind_rate": 2.1e-2,  # 1/ns
+        "cap_unbind_rate": 1.4e-9,  # 1/ns
+        "hydrolysis_actin_rate": 1e-30,  # 1/ns
+        "hydrolysis_arp_rate": 3.5e-5,  # 1/ns
+        "nucleotide_exchange_actin_rate": 1e-5,  # 1/ns
+        "nucleotide_exchange_arp_rate": 1e-5,  # 1/ns
+        "verbose": False,
+        "use_box_actin": True,
+        "use_box_arp": False,
+        "use_box_cap": False,
+        "obstacle_radius": 0.0,
+        "obstacle_diff_coeff": 0.0,
+        "use_box_obstacle": False,
+        "position_obstacle_stride": 0,
+        "displace_pointed_end_tangent": False,
+        "displace_pointed_end_radial": False,
+        "tangent_displacement_nm": 0.0,
+        "radial_displacement_radius_nm": 0.0,
+        "radial_displacement_angle_deg": 0.0,
+        "longitudinal_bonds": True,
+        "displace_stride": 1,
+        "bonds_force_multiplier": 0.2,
+        "angles_force_constant": 1000.0,
+        "dihedrals_force_constant": 1000.0,
+        "actin_constraints": True,
+        "use_box_actin": True,
+        "actin_box_center_x": 12.0,
+        "actin_box_center_y": 0.0,
+        "actin_box_center_z": 0.0,
+        "actin_box_size_x": 20.0,
+        "actin_box_size_y": 50.0,
+        "actin_box_size_z": 50.0,
+        "add_extra_box": False,
+        "barbed_binding_site": True,
+        "binding_site_reaction_distance": 3.0,
+        "add_membrane": True,
+        "membrane_center_x": 25.0,
+        "membrane_center_y": 0.0,
+        "membrane_center_z": 0.0,
+        "membrane_size_x": 0.0,
+        "membrane_size_y": 100.0,
+        "membrane_size_z": 100.0,
+        'membrane_particle_radius': 2.5,
+        'obstacle_controlled_position_x': 0.0,
+        'obstacle_controlled_position_y': 0.0,
+        'obstacle_controlled_position_z': 0.0,
+        'random_seed': 0,
+    }
+
+
 class ReaddyActinMembrane(Process):
     '''
     This process runs ReaDDy models with coarse-grained particle 
@@ -109,6 +239,10 @@ class ReaddyActinMembrane(Process):
         actin_simulation = ActinSimulation(self.config, False, False, readdy_system)
         self.readdy_system = actin_simulation.system
         self.readdy_simulation = actin_simulation.simulation
+
+    def initial_state(self):
+        return get_monomers()
+
 
     def inputs(self):
         return {
