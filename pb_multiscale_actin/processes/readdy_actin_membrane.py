@@ -2,11 +2,7 @@ import random
 from typing import Any
 
 import numpy as np
-
-from process_bigraph import Process, Composite, gather_emitter_results
-from process_bigraph.emitter import emitter_from_wires
-from process_bigraph.process_types import ProcessTypes
-
+from process_bigraph import Process
 from simularium_readdy_models.actin import (
     ActinSimulation,
     ActinGenerator,
@@ -14,7 +10,53 @@ from simularium_readdy_models.actin import (
 )
 from simularium_readdy_models.common import ReaddyUtil, get_membrane_monomers
 
-from simularium_emitter import SimulariumEmitter
+
+def get_monomers():
+    actin_monomers = ActinGenerator.get_monomers(
+        fibers_data=[
+            FiberData(
+                28,
+                [
+                    np.array([-25, 0, 0]),
+                    np.array([25, 0, 0]),
+                ],
+                "Actin-Polymer",
+            )
+        ],
+        use_uuids=False,
+        start_normal=np.array([0., 1., 0.]),
+        longitudinal_bonds=True,
+        barbed_binding_site=True,
+    )
+    actin_monomers = ActinGenerator.setup_fixed_monomers(
+        actin_monomers,
+        orthogonal_seed=True,
+        n_fixed_monomers_pointed=3,
+        n_fixed_monomers_barbed=0,
+    )
+    membrane_monomers = get_membrane_monomers(
+        center=np.array([25.0, 0.0, 0.0]),
+        size=np.array([0.0, 100.0, 100.0]),
+        particle_radius=2.5,
+        start_particle_id=len(actin_monomers["particles"].keys()),
+        top_id=1
+    )
+    free_actin_monomers = ActinGenerator.get_free_actin_monomers(
+        concentration=500.0,
+        box_center=np.array([12., 0., 0.]),
+        box_size=np.array([20., 50., 50.]),
+        start_particle_id=len(actin_monomers["particles"].keys()) + len(membrane_monomers["particles"].keys()),
+        start_top_id=2
+    )
+    monomers = {
+        'particles': {**actin_monomers['particles'], **membrane_monomers['particles']},
+        'topologies': {**actin_monomers['topologies'], **membrane_monomers['topologies']}
+    }
+    monomers = {
+        'particles': {**monomers['particles'], **free_actin_monomers['particles']},
+        'topologies': {**monomers['topologies'], **free_actin_monomers['topologies']}
+    }
+    return monomers
 
 
 class ReaddyActinMembrane(Process):
@@ -109,6 +151,10 @@ class ReaddyActinMembrane(Process):
         actin_simulation = ActinSimulation(self.config, False, False, readdy_system)
         self.readdy_system = actin_simulation.system
         self.readdy_simulation = actin_simulation.simulation
+
+    def initial_state(self):
+        return get_monomers()
+
 
     def inputs(self):
         return {
