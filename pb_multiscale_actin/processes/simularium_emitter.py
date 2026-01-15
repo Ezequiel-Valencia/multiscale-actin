@@ -1,3 +1,5 @@
+import datetime
+import os
 from typing import Any, Dict, Tuple
 
 from process_bigraph import Emitter
@@ -30,7 +32,7 @@ class SimulariumEmitter(Emitter):
         return {}
 
     def query(self, query=None):
-        output = self.config["output_dir"]
+        output = "" if "output_dir" not in self.config else self.config["output_dir"]
         return {'result' : self.save_simularium_file(output)}
 
     def get_simularium_monomers(
@@ -154,7 +156,7 @@ class SimulariumEmitter(Emitter):
             )
         )
 
-    def save_simularium_file(self, output_path: str="test") -> str:
+    def save_simularium_file(self, output_dir) -> str:
         """
         Save the accumulated timeseries history of emitted data to file
         """
@@ -182,5 +184,6 @@ class SimulariumEmitter(Emitter):
         simularium_converter = SimulariumEmitter.get_simularium_converter(
             trajectory, box_dimensions, 0.1
         )
+        output_path = os.path.join(output_dir, f"readdy_result_{datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}")
         simularium_converter.save(output_path)
         return f"saved to {output_path}.simularium"

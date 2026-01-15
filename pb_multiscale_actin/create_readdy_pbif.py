@@ -111,7 +111,7 @@ def register_items_into_core(core: ProcessTypes):
     core.register_process('pb_multiscale_actin.processes.readdy_actin_membrane.SimulariumEmitter', SimulariumEmitter)
 
 
-def generate_readdy_pbg(output_dir: str):
+def generate_readdy_pbg(output_dir):
     emitters_from_wires = emitter_from_wires({
         'particles': ['particles'],
         'topologies': ['topologies'],
@@ -138,7 +138,7 @@ def generate_readdy_pbg(output_dir: str):
     return state
 
 def run_readdy_actin_membrane(total_time=3):
-    state = generate_readdy_pbg(output_dir="readdy_result")
+    state = generate_readdy_pbg(output_dir="")
 
     core = ProcessTypes()
     register_items_into_core(core)
